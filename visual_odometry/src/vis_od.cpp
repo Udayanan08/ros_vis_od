@@ -8,73 +8,99 @@ using namespace cv::xfeatures2d;
 class vis_od : public rclcpp::Node{
 	public:
 	vis_od():Node("visual_odometry"){
-		// subscription_ = this->create_subscription<std_msgs::msg::String>(
-        //                 "topic", 10, std::bind(&MinimalSubscriber::topic_callback, this, _1));
-	// 	match_img_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("vis_od/Pose", 10);
-	// 	timer_ = this->create_wall_timer(
-    //   2000ms, std::bind(&vis_od::timer_callback, this));
-	  img_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("vis_od/Img", 10);
+		// Subscription to the left image topic
+		left_img_subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
+                        "stereo_left", 10, std::bind(&vis_od::topic_callback, this, std::placeholders::_1));
+
+		// Subscription to the right image topic
+		right_img_subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
+                        "stereo_right", 10, std::bind(&vis_od::topic_callback2, this, std::placeholders::_1));
+
+		// Image publisher
+	  	img_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("vis_od/Img", 10);
 		timer2_ = this->create_wall_timer(
-      2000ms, std::bind(&vis_od::timer_callback2, this));
+      	3ms, std::bind(&vis_od::timer_callback2, this));
 
-	  	cap.open(0);
-		cap.set(CAP_PROP_FPS, 60);
-		cap.set(CAP_PROP_FRAME_WIDTH, 320);
-		cap.set(CAP_PROP_FRAME_HEIGHT, 240);
-
+	  	// cap.open(0);
+		// cap.set(CAP_PROP_FPS, 60);
+		// cap.set(CAP_PROP_FRAME_WIDTH, 320);
+		// cap.set(CAP_PROP_FRAME_HEIGHT, 240);
+		
 	}
 
 	private:
-	void timer_callback(){
-		cap.read(frame);
-		cout<<"frame size : ";
-		cout<<frame.size()<<endl;
-		left_frame = frame(cv::Range(0, frame.size().height), cv::Range(0, frame.size().width/2));
-		right_frame = frame(cv::Range(0, frame.size().height), cv::Range(frame.size().width/2, frame.size().width));
-		
-		match_image(left_frame, right_frame, projMat1, projMat2, match_img2);
-		cout<<match_img2.size()<<endl;
-		auto msg = sensor_msgs::msg::Image();
-		msg.encoding = "mono8"; // assuming BGR color space
-		msg.height = match_img2.rows;
-		msg.width = match_img2.cols;
-		msg.step = match_img2.step;
-		size_t size = match_img2.rows * match_img2.step;
-		msg.data.resize(size);
-		memcpy(msg.data.data(), match_img2.data, size);
+	void topic_callback(const sensor_msgs::msg::Image::SharedPtr msg){
+		left_frame = cv_bridge::toCvShare(msg, "bgr8")->image;
 
-		// Publish the image message
-		match_img_publisher_->publish(msg);
+		left_img_flag = true;
+
 	}
+	void topic_callback2(const sensor_msgs::msg::Image::SharedPtr msg){
+		right_frame = cv_bridge::toCvShare(msg, "bgr8")->image;
+		right_img_flag = true;
+	}
+
+
+
+		// cap.read(frame);
+		// cout<<"frame size : ";
+		// cout<<frame.size()<<endl;
+		// left_frame = frame(cv::Range(0, frame.size().height), cv::Range(0, frame.size().width/2));
+		// right_frame = frame(cv::Range(0, frame.size().height), cv::Range(frame.size().width/2, frame.size().width));
+		
+		// match_image(left_frame, right_frame, projMat1, projMat2, match_img2);
+		// auto msg = sensor_msgs::msg::Image();
+		// msg.encoding = "mono8"; // assuming BGR color spaces
+		// msg.height = match_img2.rows;
+		// msg.width = match_img2.cols;
+		// msg.step = match_img2.step;
+		// size_t size = match_img2.rows * match_img2.step;
+		// msg.data.resize(size);
+		// memcpy(msg.data.data(), match_img2.data, size);
+
+		// // Publish the image message
+		// match_img_publisher->publish(msg);
+	
 	void timer_callback2(){
-		cap.read(frame);
-		cout<<"frame size : ";
-		cout<<frame.type()<<endl;
-		left_frame = frame(cv::Range(0, frame.size().height), cv::Range(0, frame.size().width/2));
-		right_frame = frame(cv::Range(0, frame.size().height), cv::Range(frame.size().width/2, frame.size().width));
-		cv::cvtColor(left_frame, dist_gray_frame, cv::COLOR_BGR2GRAY);
-		cv::cvtColor(right_frame, dist_gray_frame2, cv::COLOR_BGR2GRAY);
+		// cap.read(frame);
+		// left_frame = frame(cv::Range(0, frame.size().height), cv::Range(0, frame.size().width/2));
+		// right_frame = frame(cv::Range(0, frame.size().height), cv::Range(frame.size().width/2, frame.size().width));
+		// cv::cvtColor(left_frame, dist_gray_frame, cv::COLOR_BGR2GRAY);
+		// cv::cvtColor(right_frame, dist_gray_frame2, cv::COLOR_BGR2GRAY);
 		
-		cout << projMat1.cam<<endl;
-		cv::undistort(dist_gray_frame, match_img2, projMat1.cam, projMat1.dist, noArray());
-		cv::undistort(dist_gray_frame2, gray_frame2, projMat2.cam, projMat2.dist, noArray());
-		
-		auto msg = sensor_msgs::msg::Image();
-		msg.encoding = "mono8"; // assuming BGR color space
-		msg.height = match_img2.rows;
-		msg.width = match_img2.cols;
-		msg.step = match_img2.step;
-		size_t size = match_img2.rows * match_img2.step;
-		msg.data.resize(size);
-		memcpy(msg.data.data(), match_img2.data, size);
+		// cv::undistort(dist_gray_frame, match_img2, projMat1.cam, projMat1.dist, noArray());
+		// cv::undistort(dist_gray_frame2, gray_frame2, projMat2.cam, projMat2.dist, noArray());
 
-		// Publish the image message
-		img_publisher_->publish(msg);
+		
+		if (left_img_flag ==true && right_img_flag ==true){
+			match_image(left_frame, right_frame, projMat1, projMat2, match_img2);
+
+			match_img_msg_ = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", match_img2)
+               .toImageMsg();
+
+			// auto msg = sensor_msgs::msg::Image();
+			// msg.encoding = "mono8"; // assuming BGR color space
+			// msg.height = match_img2.rows;
+			// msg.width = match_img2.cols;
+			// msg.step = match_img2.step;
+			// // msg.header.stamp = this->now();
+			// size_t size = match_img2.rows * match_img2.step;
+			// msg.data.resize(size);
+			// memcpy(msg.data.data(), match_img2.data, size);
+
+			// Publish the image message
+			img_publisher_->publish(*match_img_msg_.get());
+			left_img_flag = false;
+			right_img_flag = false;
+		}
 	}
-	rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr match_img_publisher_;
+	rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr left_img_subscription_;
+	rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr right_img_subscription_;
 	rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr img_publisher_;
-	rclcpp::TimerBase::SharedPtr timer_;
+	sensor_msgs::msg::Image::SharedPtr match_img_msg_;
 	rclcpp::TimerBase::SharedPtr timer2_;
+
+	bool right_img_flag, left_img_flag;
 };
 
 

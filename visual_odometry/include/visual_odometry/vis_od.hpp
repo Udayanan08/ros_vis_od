@@ -7,6 +7,8 @@
 #include "sensor_msgs/msg/image.hpp"
 #include "std_msgs/msg/header.hpp"
 #include "geometry_msgs/msg/pose.hpp"
+#include <cv_bridge/cv_bridge.h>
+
 
 
 Mat frame;
