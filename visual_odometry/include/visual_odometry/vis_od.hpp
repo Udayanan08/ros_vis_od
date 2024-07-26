@@ -14,6 +14,7 @@
 Mat frame;
 Mat left_frame;
 Mat right_frame;
+Mat left_frame1, right_frame1;
 Mat dist_gray_frame;
 Mat dist_gray_frame2;
 Mat gray_frame;

@@ -30,12 +30,14 @@ class vis_od : public rclcpp::Node{
 
 	private:
 	void topic_callback(const sensor_msgs::msg::Image::SharedPtr msg){
+		left_frame1 = left_frame; 
 		left_frame = cv_bridge::toCvShare(msg, "bgr8")->image;
 
 		left_img_flag = true;
 
 	}
 	void topic_callback2(const sensor_msgs::msg::Image::SharedPtr msg){
+		right_frame1 = right_frame;
 		right_frame = cv_bridge::toCvShare(msg, "bgr8")->image;
 		right_img_flag = true;
 	}
