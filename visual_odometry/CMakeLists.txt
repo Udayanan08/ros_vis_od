@@ -61,6 +61,10 @@ install(
   DIRECTORY include/
   DESTINATION lib/include
 )
+install(
+  DIRECTORY launch/
+  DESTINATION lib/launch
+)
 
 install(
   TARGETS vis_od DESTINATION lib/${PROJECT_NAME})
