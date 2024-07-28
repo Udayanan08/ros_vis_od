@@ -75,25 +75,27 @@ class vis_od : public rclcpp::Node{
 
 		
 		if (left_img_flag ==true && right_img_flag ==true){
-			match_image(left_frame, right_frame, projMat1, projMat2, match_img2);
 
-			match_img_msg_ = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", match_img2)
-               .toImageMsg();
+			if(!left_frame1.empty()){
+				match_image(left_frame, right_frame, projMat1, projMat2, match_img2);
+				match_img_msg_ = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", match_img2).toImageMsg();
 
-			// auto msg = sensor_msgs::msg::Image();
-			// msg.encoding = "mono8"; // assuming BGR color space
-			// msg.height = match_img2.rows;
-			// msg.width = match_img2.cols;
-			// msg.step = match_img2.step;
-			// // msg.header.stamp = this->now();
-			// size_t size = match_img2.rows * match_img2.step;
-			// msg.data.resize(size);
-			// memcpy(msg.data.data(), match_img2.data, size);
+				// auto msg = sensor_msgs::msg::Image();
+				// msg.encoding = "mono8"; // assuming BGR color space
+				// msg.height = match_img2.rows;
+				// msg.width = match_img2.cols;
+				// msg.step = match_img2.step;
+				// // msg.header.stamp = this->now();
+				// size_t size = match_img2.rows * match_img2.step;
+				// msg.data.resize(size);
+				// memcpy(msg.data.data(), match_img2.data, size);
 
-			// Publish the image message
-			img_publisher_->publish(*match_img_msg_.get());
-			left_img_flag = false;
-			right_img_flag = false;
+				// Publish the image message
+				img_publisher_->publish(*match_img_msg_.get());
+				left_img_flag = false;
+				right_img_flag = false;
+			}
+		
 		}
 	}
 	rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr left_img_subscription_;
