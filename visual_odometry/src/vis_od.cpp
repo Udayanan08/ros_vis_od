@@ -19,7 +19,7 @@ class vis_od : public rclcpp::Node{
 		// Image publisher
 	  	img_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("vis_od/Img", 10);
 		timer2_ = this->create_wall_timer(
-      	3ms, std::bind(&vis_od::timer_callback2, this));
+      	30ms, std::bind(&vis_od::timer_callback2, this));
 
 	  	// cap.open(0);
 		// cap.set(CAP_PROP_FPS, 60);
@@ -31,7 +31,6 @@ class vis_od : public rclcpp::Node{
 	private:
 	void topic_callback(const sensor_msgs::msg::Image::SharedPtr msg){
 		left_frame_new = cv_bridge::toCvShare(msg, "bgr8")->image;
-
 		left_img_flag = true;
 
 	}
@@ -70,11 +69,13 @@ class vis_od : public rclcpp::Node{
 		
 		// cv::undistort(dist_gray_frame, match_img2, projMat1.cam, projMat1.dist, noArray());
 		// cv::undistort(dist_gray_frame2, gray_frame2, projMat2.cam, projMat2.dist, noArray());
-		left_frame1 = left_frame;
-		left_frame = left_frame_new;
-		right_frame1 = right_frame;
-		right_frame = right_frame_new;
-		
+		left_frame1 = left_frame.clone();
+		left_frame = left_frame_new.clone();
+		right_frame1 = right_frame.clone();
+		right_frame = right_frame_new.clone();
+		// cout<<"left_frame_1 : "<<left_frame1.size()<<endl;
+		// cout<<"left_frame : "<<left_frame.size()<<endl;
+
 		if (left_img_flag ==true && right_img_flag ==true){
 
 			if(!left_frame1.empty()){
@@ -97,11 +98,9 @@ class vis_od : public rclcpp::Node{
 				right_img_flag = false;
 			}
 		}
-		right_frame.release();
-		left_frame.release();
-		left_frame1.release();
-		right_frame1.release();
+		
 	}
+
 	rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr left_img_subscription_;
 	rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr right_img_subscription_;
 	rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr img_publisher_;
@@ -122,8 +121,8 @@ void match_image(Mat& left_frame, Mat& right_frame, Mat& left_frame1, calib_data
 	cv::undistort(dist_gray_frame2, gray_frame2, projMat2.cam, projMat2.dist, noArray());
 	cv::undistort(dist_gray_frame3, gray_frame3, projMat1.cam, projMat1.dist, noArray());
 
-	imshow("hello", left_frame);
-    waitKey(0);
+	// imshow("hello", left_frame);
+    // waitKey(0);
 	vector<DMatch> good_matches;
 	fdetectMatch(gray_frame, gray_frame2, gray_frame3, projMat1.cam, R, t, match_img2);
 	cout<<"Rotation matarix : "<<R<<endl;

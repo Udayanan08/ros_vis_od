@@ -11,12 +11,12 @@
 
 
 
-Mat left_frame_new = Mat();
-Mat right_frame_new = Mat();
-Mat left_frame = Mat();
-Mat right_frame = Mat();
-Mat left_frame1 = Mat();
-Mat right_frame1 = Mat();
+Mat left_frame_new;
+Mat right_frame_new;
+Mat left_frame;
+Mat right_frame;
+Mat left_frame1;
+Mat right_frame1;
 Mat dist_gray_frame, dist_gray_frame2, dist_gray_frame3;
 Mat gray_frame, gray_frame2, gray_frame3;
 VideoCapture cap;

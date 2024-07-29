@@ -27,6 +27,6 @@ void depthcomp(Mat&, Mat&, Mat&);
 void posecomp(vector<KeyPoint>&, vector<KeyPoint>&, vector<DMatch>&, calib_data&, calib_data&, Mat&, Mat&);
 calib_data read_yaml2(const YAML::Node& , const YAML::Node& , const YAML::Node& );
 void filter_matches(vector<DMatch>&, vector<DMatch>&);
-void comp_depth(Point2f&, Point2f&, Point3f&, float, float);
+void comp_depth(Point2f&, Point2f&, Point3f&, double, double);
 
 
