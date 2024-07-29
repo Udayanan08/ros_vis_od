@@ -11,16 +11,17 @@
 
 
 
-Mat frame;
-Mat left_frame;
-Mat right_frame;
-Mat left_frame1, right_frame1;
-Mat dist_gray_frame;
-Mat dist_gray_frame2;
-Mat gray_frame;
-Mat gray_frame2;
+Mat left_frame_new = Mat();
+Mat right_frame_new = Mat();
+Mat left_frame = Mat();
+Mat right_frame = Mat();
+Mat left_frame1 = Mat();
+Mat right_frame1 = Mat();
+Mat dist_gray_frame, dist_gray_frame2, dist_gray_frame3;
+Mat gray_frame, gray_frame2, gray_frame3;
 VideoCapture cap;
 Mat match_img, match_img2;
+Mat R,t;
 
 
 vector<KeyPoint> kp;
@@ -31,7 +32,7 @@ Mat points4d;
 vector<Point3d> points;
 vector<DMatch> good_matches;
 
-void match_image(Mat& , Mat& , calib_data& , calib_data&, Mat&);
+void match_image(Mat& , Mat&, Mat&, calib_data& , calib_data&, Mat&);
 
 //getting projection matrices from calibration file
 YAML::Node config1 = YAML::LoadFile("install/visual_odometry/lib/config/usb3_left.yaml");

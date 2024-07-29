@@ -1,8 +1,8 @@
 #include "../include/visual_odometry/feature.hpp"
 
-void depthcomp(Mat& limg, Mat& rimg, Mat& depth){
+// void depthcomp(Mat& limg, Mat& rimg, Mat& depth){
 
-}
+// }
 void posecomp(vector<KeyPoint>& kp1, vector<KeyPoint>& kp2, vector<DMatch>& g_matches, calib_data& calib1, calib_data& calib2, Mat& R, Mat& t){
     vector<Point2f> point1, point2;
 
@@ -20,11 +20,11 @@ void posecomp(vector<KeyPoint>& kp1, vector<KeyPoint>& kp2, vector<DMatch>& g_ma
     
 }
 
-void fdetectMatch(Mat& limg1, Mat& rimg1, vector<KeyPoint>& kp, vector<KeyPoint>& kp2, vector<DMatch>& g_match){
+void fdetectMatch(Mat& limg1, Mat& rimg1, Mat& limg2, Mat& k, Mat& R, Mat& t, Mat& match_img2){
  
-    Mat ldesc;
-    Mat rdesc;
-    Mat limg,rimg;
+    Mat ldesc, rdesc, ldesct;
+    Mat limg, rimg, limgt;
+    vector<KeyPoint> kpl, kpr, kplt;
 
     Ptr<CLAHE> clahe = createCLAHE();
     clahe->setClipLimit(4);
@@ -32,81 +32,75 @@ void fdetectMatch(Mat& limg1, Mat& rimg1, vector<KeyPoint>& kp, vector<KeyPoint>
     
     clahe->apply(limg1, limg);
     clahe->apply(rimg1, rimg);
+    clahe->apply(limg2, limgt);
       
     //FEATURE DETECTOR
 
     Ptr<ORB> orb = ORB::create(500, 1.2, 16, 20, 2, 2, ORB::HARRIS_SCORE, 20, 15);
-    orb->detectAndCompute(limg, noArray(), kp, ldesc);
-	orb->detectAndCompute(rimg, noArray(), kp2, rdesc);
+    orb->detectAndCompute(limg, noArray(), kpl, ldesc);
+	orb->detectAndCompute(rimg, noArray(), kpr, rdesc);
+    orb->detectAndCompute(limgt, noArray(), kplt, ldesct);
 
     ldesc.convertTo(ldesc, CV_32F);
     rdesc.convertTo(rdesc, CV_32F);
-    for(int i=0;i<20;i++){
-        cout<<"point "<<i<<" :";
-        cout<<kp[i].pt.x<<", "<<kp[i].pt.y<<endl;
-        cout<<kp2[i].pt.x<<", "<<kp2[i].pt.y<<endl;
-    }
+    ldesct.convertTo(ldesct, CV_32F);
+    // for(int i=0;i<20;i++){
+    //     cout<<"point "<<i<<" :";
+    //     cout<<kp[i].pt.x<<", "<<kp[i].pt.y<<endl;
+    //     cout<<kp2[i].pt.x<<", "<<kp2[i].pt.y<<endl;
+    // }
     //FEATURE MATCHER
-    vector<DMatch> matches;
+    vector<DMatch> matches, matchest;
+    vector<DMatch> good_matches, good_matchest;
 	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
 	matcher->match(ldesc, rdesc, matches);
-    cout<<"hello  --as - - "<<rimg.size()<<endl;
+    matcher->match(ldesc, ldesct, matchest);
 
+    filter_matches(matches, good_matches);
+    filter_matches(matchest, good_matchest);
 
-
-    // Mat ldesc;
-    // Mat rdesc;
-    // vector<DMatch> matches;
-    // Mat limgSlice, rimgSlice;
-    // vector<KeyPoint> kp,kp2;
-
-    // //FEATURE DETECTOR
-    // Ptr<ORB> orb = ORB::create(500, 1.2, 16, 0, 2, 2, ORB::HARRIS_SCORE, 20, 15);
-
-   	// Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
-
-
-    // for(int i=0; i<3; i++){
-    //     limgSlice = limg(Range((i*80)+1, (i+1)*80),Range(20,300));
-    //     rimgSlice = rimg(Range((i*80)+1, (i+1)*80),Range(20,300));
-    //     orb->detectAndCompute(limgSlice, noArray(), kp, ldesc);
-	//     orb->detectAndCompute(rimgSlice, noArray(), kp2, rdesc);
-        
-    //     orb->detectAndCompute(limgSlice, noArray(), kp, ldesc);
-    // 	orb->detectAndCompute(rimgSlice, noArray(), kp2, rdesc);
-    //     for(int j=0; j<kp.size();j++){
-    //         kp[j].pt.y=kp[j].pt.y+(i*80)+1;
-    //     }
-    //     for(int j=0; j<kp2.size();j++){
-    //         kp2[j].pt.y=kp2[j].pt.y+(i*80)+1;
-    //     }
-    //     kplimg.insert(kplimg.end(),kp.begin(),kp.end());
-    //     kprimg.insert(kprimg.end(),kp2.begin(),kp2.end());
-    //     ldesc.convertTo(ldesc, CV_32F);
-    //     rdesc.convertTo(rdesc, CV_32F);
-    //     vector<DMatch> matchesSlice;
-	//     matcher->match(ldesc, rdesc, matchesSlice);
-    //     matches.insert(matches.end(),matchesSlice.begin(),matchesSlice.end());
-    // }
+    vector<Point3f> points3d;
+    vector<Point2f> points2d;
+    for(DMatch i:matches){
+        for(DMatch j:matchest){
+            if(i.queryIdx==j.queryIdx){
+                points2d.push_back(kplt[j.trainIdx].pt);
+                Point3f d;
+                comp_depth(kpl[i.queryIdx].pt, kpr[i.trainIdx].pt, d, 0.06, 172.0);
+                points3d.push_back(d);
+            }
+        }        
+    }
     
-
-    
-
-    //FEATURE MATCHER
-    
-
+    solvePnP(points3d, points2d, k, noArray(), R, t, false);
     //OUTLIER REMOVAL
+    // auto min_max = minmax_element(matches.begin(), matches.end(),[](const DMatch &m1, const DMatch &m2) { return m1.distance < m2.distance; });
+    // cout<<"min_dist - "<<min_max.first->distance<<endl;
+    // cout<<"max_dist - "<<min_max.second->distance<<endl;
+    // double min_dist = min_max.first->distance;
+    // double max_dist = min_max.second->distance;
+    // for(int i=0;i<ldesc.rows;i++){
+    //     if(matches[i].distance <= max(2*min_dist,80.0)){
+    //         g_match.push_back(matches[i]);
+    //     }
+    // }
+    match_img2 = Mat();
+    drawMatches(limg, kpl, rimg, kpr, good_matches, match_img2, Scalar::all(-1),
+ 	Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+    
+}
+
+void filter_matches(vector<DMatch>& matches, vector<DMatch>& good_matches){
     auto min_max = minmax_element(matches.begin(), matches.end(),[](const DMatch &m1, const DMatch &m2) { return m1.distance < m2.distance; });
     cout<<"min_dist - "<<min_max.first->distance<<endl;
     cout<<"max_dist - "<<min_max.second->distance<<endl;
     double min_dist = min_max.first->distance;
     double max_dist = min_max.second->distance;
-    for(int i=0;i<ldesc.rows;i++){
-        if(matches[i].distance <= max(2*min_dist,60.0)){
-            g_match.push_back(matches[i]);
+    for(int i=0;i<matches.size();i++){
+        if(matches[i].distance <= max(2*min_dist,80.0)){
+            good_matches.push_back(matches[i]);
         }
     }
-    
 }
 
 calib_data read_yaml2(const YAML::Node& node1, const YAML::Node& node2, const YAML::Node& node3){
@@ -143,3 +137,22 @@ calib_data read_yaml2(const YAML::Node& node1, const YAML::Node& node2, const YA
     }
 	return calb;
 }
+
+void comp_depth(Point2f& kp1, Point2f& kp2, Point3f& point3d, float b, float f){
+        if(kp1.y == kp2.y){
+            float d = kp1.x - kp2.x;
+            float d1 = (f*b)/d;
+            point3d.x = kp1.x;
+            point3d.y = kp1.y;
+            point3d.z = d1;
+        }
+}
+
+
+// void depth_map(Mat& limg, Mat& rimg){
+//     auto stereo = cv::StereoBM::create();
+//     Mat disparity;
+//     stereo->compute(limg,rimg,disparity);
+
+// }
+
