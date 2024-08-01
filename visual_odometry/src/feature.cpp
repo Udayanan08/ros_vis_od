@@ -124,6 +124,22 @@ calib_data read_yaml2(const YAML::Node& node1, const YAML::Node& node2, const YA
     }
 	return calb;
 }
+Mat read_yaml_kitti(const YAML::Node& node1){
+	std::vector<double> data1 = node1["data"].as<std::vector<double>>();
+
+    Mat cam(Mat::zeros(3, 3, CV_64F));
+    
+    cam.at<double>(0,0)=data1[0];
+    cam.at<double>(0,1)=data1[1];
+    cam.at<double>(0,2)=data1[2];
+    cam.at<double>(1,0)=data1[4];
+    cam.at<double>(1,1)=data1[5];
+    cam.at<double>(1,2)=data1[6];
+    cam.at<double>(2,0)=data1[8];
+    cam.at<double>(2,1)=data1[9];
+    cam.at<double>(2,2)=data1[10];
+	return cam;
+}
 
 void comp_depth(Point2f& kp1, Point2f& kp2, Point3f& point3d, double b, Mat k){
         double d = abs(kp1.x - kp2.x);

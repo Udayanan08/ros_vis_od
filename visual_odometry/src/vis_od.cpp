@@ -20,19 +20,19 @@ class vis_od : public rclcpp::Node{
 	  	img_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("vis_od/Img", 10);
 		timer2_ = this->create_wall_timer(
       	33ms, std::bind(&vis_od::timer_callback2, this));
-	
+		
 	}
 
 	private:
 	void topic_callback(const sensor_msgs::msg::Image::SharedPtr msg){
-		left_frame_new = cv_bridge::toCvShare(msg, "bgr8")->image;
+		left_frame_new = cv_bridge::toCvShare(msg, "mono8")->image;
 		left_frame1 = left_frame.clone();
 		left_frame = left_frame_new.clone();
+		cout<<left_frame.size()<<endl;
 		left_img_flag = true;
-
 	}
 	void topic_callback2(const sensor_msgs::msg::Image::SharedPtr msg){
-		right_frame_new = cv_bridge::toCvShare(msg, "bgr8")->image;
+		right_frame_new = cv_bridge::toCvShare(msg, "mono8")->image;
 		right_frame1 = right_frame.clone();
 		right_frame = right_frame_new.clone();
 		right_img_flag = true;
@@ -40,12 +40,14 @@ class vis_od : public rclcpp::Node{
 	
 	void timer_callback2(){
 		if (left_img_flag ==true && right_img_flag ==true){
-
 			if(!left_frame1.empty()){
+				auto start = std::chrono::high_resolution_clock::now();
 				match_image(left_frame, right_frame, left_frame1, projMat1, projMat2, match_img2);
 				match_img_msg_ = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", match_img2).toImageMsg();
-
-				// Publish the image message
+				auto end = std::chrono::high_resolution_clock::now();
+				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+				cout << "The function took " << duration.count() << " milliseconds\n";
+		// 		Publish the image message
 				img_publisher_->publish(*match_img_msg_.get());
 				left_img_flag = false;
 				right_img_flag = false;
@@ -57,39 +59,40 @@ class vis_od : public rclcpp::Node{
 	rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr img_publisher_;
 	sensor_msgs::msg::Image::SharedPtr match_img_msg_;
 	rclcpp::TimerBase::SharedPtr timer2_;
-
+	
 	bool right_img_flag, left_img_flag;
 };
 
-
-
 void match_image(Mat& left_frame, Mat& right_frame, Mat& left_frame1, calib_data& projMat1, calib_data& projMat2, Mat& match_img2){
-	cv::cvtColor(left_frame, dist_gray_frame, cv::COLOR_BGR2GRAY);
-	cv::cvtColor(right_frame, dist_gray_frame2, cv::COLOR_BGR2GRAY);
-	cv::cvtColor(left_frame1, dist_gray_frame3, cv::COLOR_BGR2GRAY);
+	// cv::cvtColor(left_frame, dist_gray_frame, cv::COLOR_BGR2GRAY);
+	// cv::cvtColor(right_frame, dist_gray_frame2, cv::COLOR_BGR2GRAY);
+	// cv::cvtColor(left_frame1, dist_gray_frame3, cv::COLOR_BGR2GRAY);
 
-	cv::undistort(dist_gray_frame, gray_frame, projMat1.cam, projMat1.dist, noArray());
-	cv::undistort(dist_gray_frame2, gray_frame2, projMat2.cam, projMat2.dist, noArray());
-	cv::undistort(dist_gray_frame3, gray_frame3, projMat1.cam, projMat1.dist, noArray());
+	// cv::undistort(left_frame, gray_frame, projMat1.cam, projMat1.dist, noArray());
+	// cv::undistort(right_frame, gray_frame2, projMat2.cam, projMat2.dist, noArray());
+	// cv::undistort(left_frame1, gray_frame3, projMat1.cam, projMat1.dist, noArray());
 
 	// imshow("hello", left_frame);
     // waitKey(0);
 	vector<DMatch> good_matches;
-	fdetectMatch(gray_frame, gray_frame2, gray_frame3, projMat1.cam, R, t, match_img2);
+	fdetectMatch(left_frame, right_frame, left_frame1, projMat1.cam, R, t, match_img2);
 	cout<<"Rotation matarix : "<<endl<<R<<endl;
 	cout<<"Translational matrix : "<<endl<<t<<endl;
 	R.release();
 	t.release();
-
 }
 
-int main(int argc, char * argv[])
-{
+int main(int argc, char * argv[]){
+
+	YAML::Node config1 = YAML::LoadFile("install/visual_odometry/lib/config/kitti_gray.yaml");
+	YAML::Node config2 = YAML::LoadFile("install/visual_odometry/lib/config/kitti_gray.yaml");
+	projMat1.cam = read_yaml_kitti(config1["P0"]);
+	projMat2.cam = read_yaml_kitti(config2["P1"]);
+
 	rclcpp::init(argc, argv);
 	rclcpp::spin(std::make_shared<vis_od>());
 	rclcpp::shutdown();
 	return 0;	
-	
 }
 
 
