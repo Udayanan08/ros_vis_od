@@ -19,7 +19,7 @@ class vis_od : public rclcpp::Node{
 		// Image publisher
 	  	img_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("vis_od/Img", 10);
 		timer2_ = this->create_wall_timer(
-      	33ms, std::bind(&vis_od::timer_callback2, this));
+      	100ms, std::bind(&vis_od::timer_callback2, this));
 		
 	}
 
