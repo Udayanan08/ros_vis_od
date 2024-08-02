@@ -78,7 +78,9 @@ void match_image(Mat& left_frame, Mat& right_frame, Mat& left_frame1, calib_data
     // waitKey(0);
 	vector<DMatch> good_matches;
 	fdetectMatch(left_frame, right_frame, left_frame1, projMat1.cam, R, t, match_img2);
+	cout<<"helllo -----------------------1"<<endl;
 	comp_path(R,t,R_trans,t_trans,trans_mat);
+	cout<<"helllo -----------------------2"<<endl;
 	ofstream file(file_name, std::ios::app);
 	if(file.is_open()){
 		trans_flat = trans_mat.reshape(1,1);
@@ -88,7 +90,7 @@ void match_image(Mat& left_frame, Mat& right_frame, Mat& left_frame1, calib_data
 		file<<endl;
 		file.close();
 	}
-	
+	cout<<"helllo -----------------------1"<<endl;
 	// cout<<"Rotation matarix : "<<endl<<R<<endl;
 	// cout<<"Translational matrix : "<<endl<<trans_mat<<endl;
 	R.release();
@@ -98,6 +100,7 @@ void match_image(Mat& left_frame, Mat& right_frame, Mat& left_frame1, calib_data
 void comp_path(Mat& R, Mat& t, Mat& R_trans, Mat& t_trans, Mat& trans_mat){
 	R_trans = R * R_trans;
 	t_trans = t + t_trans;
+	cout<<"helllo -----------------------3"<<endl;
 	augment(R_trans, t_trans, trans_mat);
 	
 }
